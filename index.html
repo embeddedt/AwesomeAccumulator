@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Awesome Accumulator</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                margin: 0px;
+                background: rgb(128, 128, 128);
+                background-image: url("ratio.svg");
+                background-size: 50px 50px;
+            }
+            .arrow-control {
+                width: 75px;
+                height: 75px;
+                padding: 5px;
+            }
+            .input-box {
+                height: 50px;
+                text-align: center;
+                font-family: Arial;
+                font-size: 20px;
+                padding: 5px;
+            }
+            .holder {
+                height: 100%;
+                width: 100%;
+                min-height: 100%;
+                max-height: 100%;
+                min-width: 100%;
+                max-width: 100%;
+                
+            }
+            .cute-image {
+                position: absolute;
+                max-width: 300px;
+                max-height: 300px;
+                height: auto;
+                width: 30%;
+                bottom: 0;
+            }
+            .label {
+                color: rgb(0, 200, 200);
+            }
+            h1 {
+                font-size: 40px;
+            }
+            p, label {
+                font: 1rem 'Fira Sans', sans-serif;
+            }
+            label {
+                font-size: 25px;
+            }
+            #left-arrow {
+                float: left;
+            }
+            #right-arrow {
+                float: right;
+            }
+            .number-image {
+                height: 80px;
+            }
+            #number {
+                color: rgb(77, 218, 255);
+                overflow: hidden;
+            }
+            * , *:before, *:after{ 
+                box-sizing:border-box; 
+                -moz-box-sizing:border-box; 
+                -webkit-box-sizing:border-box; 
+                -ms-box-sizing:border-box;
+            }
+            @font-face {
+                font-family: "digits";
+                src: url("digits.woff") format('woff');
+            }
+        </style>
+        <script src="sequencer.js"></script>
+        <script type="text/javascript">
+            /* Holds a reference to the Audio object with the pop sound. */
+            var popSound;
+            /* HTML font element with the number. */
+            var number;
+            /* Reference to the play/stop button element. */
+            var startButton;
+            /* Reference to the two textboxes. */
+            var startElement, incrementElement;
+            /* Reference to the speed slider. */
+            var speedElement;
+            /* Values of the two textboxes. Updated in startCounting. */
+            var startNumber, incrementNumber;
+            /* Value of the number element. */
+            var numberValue = 0;
+            /* Last promise (used to cancel the increment loop). */
+            var lastPromise;
+            /* Whether counting should continue (used as a cancel flag) */
+            var shouldKeepCounting = false;
+            /* Value of the speed slider (updated in updateSpeed). */
+            var speed = 500;
+            /* This function increments the number, then sets up a JavaScript
+             * promise to call it again.
+             */
+            function increment()
+            {
+                /* Don't do anything if we aren't supposed to count */
+                if(!shouldKeepCounting)
+                    return;
+                popSound.play();
+                /* Increment the number and set the HTML to display it. */
+                numberValue += incrementNumber;
+                number.innerHTML = numberValue;
+                /* Check if the user changed the speed. */
+                updateSpeed();
+                /* Now wait based on that speed. */
+                lastPromise = sleep(speed);
+                lastPromise.then(function() {
+                    increment();
+                });
+            }
+            function sleep (time) {
+                return new Promise((resolve) => setTimeout(resolve, time));
+            }
+            function updateStates()
+            {
+                /* This is called every time the play/stop button is clicked. */
+                if(shouldKeepCounting) {
+                    /* Display stop icon and disable all input*/
+                    startButton.src = "stop.svg";
+                    
+                } else {
+                    /* Display play icon and enable input*/
+                    startButton.src = "play.svg";
+                }
+                startElement.disabled = shouldKeepCounting;
+                incrementElement.disabled = shouldKeepCounting;
+            }
+            function stopCounting() {
+                /* This is called if the stop button is pressed */
+                shouldKeepCounting = false;
+                updateStates();
+                number.innerHTML = "0";
+            }
+            function updateSpeed() {
+                /* Get the value from the speed element */
+                speed = 2000 - parseFloat(speedElement.value);
+            }
+            function startCounting() {
+                /* If we are counting already, pass this on to stopCounting */
+                if(shouldKeepCounting) {
+                    stopCounting();
+                    return;
+                }
+                
+                /* Fetch all the variables from the HTML side */
+
+                startNumber = parseFloat(startElement.value);
+                incrementNumber = parseFloat(incrementElement.value);
+                updateSpeed();
+                if(isNaN(startNumber) || isNaN(incrementNumber))
+                    return;
+                /* Now set the number to the initial value */
+                numberValue = startNumber;
+                shouldKeepCounting = true;
+                updateStates();
+                increment();
+            }
+            /* Get all the elements and audio file(s) when the window loads. */
+            window.onload = function () {
+                popSound = new Audio('pop.mp3');
+                number = document.getElementById("number");
+                startButton = document.getElementById("start-button");
+                startElement = document.getElementById("startNumber");
+                incrementElement = document.getElementById("incrementNumber");
+                speedElement = document.getElementById("speed");
+            }
+        </script>
+    </head>
+    <body>
+        <img class="cute-image" src="owl.svg" alt="Owl"/>
+        <img class="cute-image" style="right: 0;" src="owl.svg" alt="Owl"/>
+        <div class="holder">
+            <div>
+                <center><h1 class="label" style="font-family: Courier;">The Awesome Accumulator</h1></center>
+                <center>
+                    <div>
+                        <div  style="padding: 20px;">
+                            <!-- startElement -->
+                            <input id="startNumber" class="input-box" type="text" name="starting"
+                                   placeholder="Starting number">
+                            <!-- incrementElement -->
+                            <input id="incrementNumber" class="input-box" type="text" name="increment"
+                                   placeholder="Amount to change by">
+                        </div>
+                        <div style="padding: 10px;">
+                            <!-- speedElement -->
+                            <input type="range" id="speed" name="Speed"
+                                min="0" max="1750" value="1500" step="250">
+                            <label class="label" for="speed">Speed</label>
+                        </div>
+                        <div>
+                            <!-- startButton -->
+                            <input class="arrow-control" style="width:100px;height:100px;"
+                                   type="image" src="play.svg" alt="Play button"
+                                   id="start-button" onclick="startCounting()">
+                        </div>
+                        <div>
+                            <!-- number -->
+                            <font id="number" size="32px" face="digits">0</font>
+                        </div>
+                    </div>
+                </center>
+            </div>
+        </div>
+    </body>
+</html>
